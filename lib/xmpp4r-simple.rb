@@ -6,8 +6,6 @@ module Jabber
   
   class Contact
 
-    attr_accessor :jid
-
     def initialize(client, jid)
       @jid = jid.respond_to?(:resource) ? jid : JID.new(jid)
       @client = client
@@ -36,6 +34,10 @@ module Jabber
       unsubscription_request.to = jid
       client.send!(unsubscription_request)
       client.send!(unsubscription_request.set_type(:unsubscribed))
+    end
+
+    def jid(bare=true)
+      bare ? @jid.strip : @jid
     end
 
     private
@@ -80,13 +82,13 @@ module Jabber
     # If the recipient is not in your contact list, the message will be queued
     # for later delivery, and the contact will be automatically asked for
     # authorization.
-    def deliver(jid, message, type=:normal)
+    def deliver(jid, message, type=:chat)
       contacts(jid) do |friend|
-        unless subscribed_to? jid
-          add(jid)
-          return deliver_deferred(jid, message, type)
+        unless subscribed_to? friend
+          add(friend.jid)
+          return deliver_deferred(friend.jid, message, type)
         end
-        msg = Message.new(jid)
+        msg = Message.new(friend.jid)
         msg.type = type
         msg.body = message
         send!(msg)
@@ -141,7 +143,7 @@ module Jabber
     # the jabber user jid, false otherwise.
     def subscribed_to?(jid)
       contacts(jid) do |contact|
-        return [:both, :to].include?(contact.subscription)
+        return contact.subscribed?
       end
     end
 
@@ -325,7 +327,7 @@ module Jabber
 
     # Queue messages for delivery once a user has accepted our authorization
     # request. Works in conjunction with the deferred delivery thread.
-    def deliver_deferred(jid, message, type=:normal) #:nodoc:
+    def deliver_deferred(jid, message, type) #:nodoc:
       msg = {:to => jid, :message => message, :type => type}
       queue(:pending_messages) << [msg]
     end
