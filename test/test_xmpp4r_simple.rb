@@ -1,12 +1,19 @@
+$:.unshift "#{File.dirname(__FILE__)}/../lib"
+
 require 'test/unit'
 require 'timeout'
-require '../lib/xmpp4r-simple'
+require 'xmpp4r-simple'
 
 class JabberSimpleTest < Test::Unit::TestCase
 
   def setup
-    return true if @initialized
-    @initialized = true
+    @initialized ||= false
+
+    if @initialized
+      return true
+    else
+      @initialized = true
+    end
 
     logins = []
     begin
@@ -23,8 +30,11 @@ class JabberSimpleTest < Test::Unit::TestCase
     @client1 = Jabber::Simple.new(*logins[0])
     @client2 = Jabber::Simple.new(*logins[1])
 
-    @jid1 = Jabber::JID.new(logins[0][0]).strip.to_s
-    @jid2 = Jabber::JID.new(logins[1][0]).strip.to_s
+    @jid1_raw = Jabber::JID.new(logins[0][0])
+    @jid2_raw = Jabber::JID.new(logins[1][0])
+
+    @jid1 = @jid1_raw.strip.to_s
+    @jid2 = @jid2_raw.strip.to_s
 
     # Force load the client and roster, just to be safe.
     @client1.roster
@@ -34,6 +44,14 @@ class JabberSimpleTest < Test::Unit::TestCase
   def test_ensure_the_jabber_clients_are_connected_after_setup
     assert @client1.client.is_connected?
     assert @client2.client.is_connected?
+  end
+
+  def test_inspect_should_be_custom
+    assert_equal "Jabber::Simple #{@jid1_raw}", @client1.inspect
+  end
+
+  def test_inspect_contact_should_be_custom
+    assert_equal "Jabber::Contact #{@jid2}", @client1.contacts(@jid2).inspect
   end
 
   def test_remove_users_from_our_roster_should_succeed
@@ -95,6 +113,34 @@ class JabberSimpleTest < Test::Unit::TestCase
     # Ensure that the message was received intact.
     assert_equal @jid1, messages.first.from.strip.to_s
     assert_equal "test message", messages.first.body
+  end
+
+  def test_automatically_reconnect
+    @client1.client.close
+
+    assert_before 60 do
+      assert_equal false, @client1.connected?
+    end
+
+    # empty client 2's received message queue.
+    @client2.received_messages
+
+    @client1.deliver(@jid2, "Testing")
+
+    assert_before(60) { assert @client1.connected? }
+    assert_before(60) { assert_equal 1, @client2.received_messages.size }
+  end
+
+  def test_disconnect_doesnt_allow_auto_reconnects
+    @client1.disconnect
+
+    assert_equal false, @client1.connected?
+    
+    assert_raises Jabber::ConnectionError do
+      @client1.deliver(@jid2, "testing")
+    end
+
+    @client1.reconnect
   end
 
   private

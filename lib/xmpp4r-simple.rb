@@ -3,8 +3,11 @@ require 'xmpp4r'
 require 'xmpp4r/roster'
 
 module Jabber
+
+  class ConnectionError < StandardError #:nodoc:
+  end
   
-  class Contact
+  class Contact #:nodoc:
 
     def initialize(client, jid)
       @jid = jid.respond_to?(:resource) ? jid : JID.new(jid)
@@ -54,13 +57,14 @@ module Jabber
   class Simple
 
     # Create a new Jabber::Simple client. You will be automatically connected
-    # to the Jabber server with online status, and your status set to the
-    # string passed in as the status argument.
+    # to the Jabber server and your status message will be set to the string
+    # passed in as the status_message argument.
     #
-    # jabber = Jabber::Simple.new("me@example.com", "password")
+    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!")
     def initialize(jid, password, status = nil, status_message = "Available")
       @jid = jid
       @password = password
+      @disconnected = false
       status(status, status_message)
       start_deferred_delivery_thread
     end
@@ -79,9 +83,9 @@ module Jabber
     #   * :headline: a "headline" message.
     #   * :error: an error message.
     #
-    # If the recipient is not in your contact list, the message will be queued
-    # for later delivery, and the contact will be automatically asked for
-    # authorization.
+    # If the recipient is not in your contacts list, the message will be queued
+    # for later delivery, and the Contact will be automatically asked for
+    # authorization (see Jabber::Simple#add).
     def deliver(jid, message, type=:chat)
       contacts(jid) do |friend|
         unless subscribed_to? friend
@@ -168,8 +172,10 @@ module Jabber
       contakts.size > 1 ? contakts : contakts.first
     end
 
-    # true if the Jabber client is connected, false otherwise.
+    # Returns true if the Jabber client is connected to the Jabber server,
+    # false otherwise.
     def connected?
+      @client ||= nil
       @client.respond_to?(:is_connected?) && @client.is_connected?
     end
 
@@ -181,9 +187,9 @@ module Jabber
     #
     # e.g.:
     #
-    # jabber.received_messages do |message|
-    #   puts "Received message from #{message.from}: #{message.body}"
-    # end
+    #   jabber.received_messages do |message|
+    #     puts "Received message from #{message.from}: #{message.body}"
+    #   end
     def received_messages(&block)
       dequeue(:received_messages, &block)
     end
@@ -196,14 +202,14 @@ module Jabber
     #
     # e.g.:
     #
-    # jabber.presence_updates do |friend, old_presence, new_presence|
-    #   puts "Received presence update from #{friend.to_s}: #{new_presence}"
-    # end
+    #   jabber.presence_updates do |friend, old_presence, new_presence|
+    #     puts "Received presence update from #{friend.to_s}: #{new_presence}"
+    #   end
     def presence_updates(&block)
       dequeue(:presence_updates, &block)
     end
 
-    # Returns an array of subscription notifications received since the last #
+    # Returns an array of subscription notifications received since the last
     # time new_subscriptions was called. Passing a block will yield each update
     # in turn, allowing you to break part-way through processing (especially
     # useful when your subscription handling code is not thread-safe (e.g.,
@@ -211,16 +217,17 @@ module Jabber
     #
     # e.g.:
     #
-    # jabber.new_subscriptions do |friend, presence|
-    #   puts "Received presence update from #{friend.to_s}: #{presence}"
-    # end
+    #   jabber.new_subscriptions do |friend, presence|
+    #     puts "Received presence update from #{friend.to_s}: #{presence}"
+    #   end
     def new_subscriptions(&block)
       dequeue(:new_subscriptions, &block)
     end
 
-    # Auto-accept subscriptions (friend requests).
+    # Returns true if auto-accept subscriptions (friend requests) is enabled
+    # (default), false otherwise.
     def accept_subscriptions?
-      @accept_subscriptions || true
+      @accept_subscriptions ||= true
     end
 
     # Change whether or not subscriptions (friend requests) are automatically accepted.
@@ -230,7 +237,8 @@ module Jabber
     
     # Direct access to the underlying Roster helper.
     def roster
-      @roster ||= Roster::Helper.new(client)
+      return @roster if @roster
+      self.roster = Roster::Helper.new(client)
     end
 
     # Direct access to the underlying Jabber client.
@@ -244,21 +252,34 @@ module Jabber
       client.send(msg)
     end
 
+    # Use this to force the client to reconnect after a force_disconnect.
+    def reconnect
+      @disconnected = false
+      connect!
+    end
+
+    # Use this to force the client to disconnect and not automatically
+    # reconnect.
+    def disconnect
+      disconnect!
+    end
+
     private
 
     def client=(client)
       @client = client
     end
 
-    def roster=(roster)
-      @roster = roster
+    def roster=(new_roster)
+      @roster = new_roster
     end
 
     def connect!
+      raise ConnectionError, "Connections are disabled - use Jabber::Simple::force_connect() to reconnect." if @disconnected
       # Pre-connect
       @connect_mutex ||= Mutex.new
       @connect_mutex.lock
-      disconnect!() if connected?
+      disconnect!(false) if connected?
 
       # Connect
       jid = JID.new(@jid)
@@ -269,16 +290,17 @@ module Jabber
 
       # Post-connect
       register_default_callbacks
-      status(@status, @status_message)
+      status(@presence, @status_message)
       @connect_mutex.unlock
     end
 
-    def disconnect!
-      roster = nil
+    def disconnect!(auto_reconnect = true)
+      self.roster = nil
       if client.respond_to?(:is_connected?) && client.is_connected?
-        client.disconnect
+        client.close
       end
       client = nil
+      @disconnected = auto_reconnect
     end
 
     def register_default_callbacks
