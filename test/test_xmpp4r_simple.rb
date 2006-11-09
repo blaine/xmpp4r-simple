@@ -1,3 +1,20 @@
+# Jabber::Simple - An extremely easy-to-use Jabber client library.
+# Copyright 2006 Blaine Cook <blaine@obvious.com>, Obvious Corp.
+# 
+# Jabber::Simple is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Jabber::Simple is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Jabber::Simple; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
 $:.unshift "#{File.dirname(__FILE__)}/../lib"
 
 require 'test/unit'
@@ -7,12 +24,18 @@ require 'xmpp4r-simple'
 class JabberSimpleTest < Test::Unit::TestCase
 
   def setup
-    @initialized ||= false
+    @@connections ||= {}
 
-    if @initialized
+    if @@connections.include?(:client1)
+      @client1 = @@connections[:client1]
+      @client2 = @@connections[:client2]
+      @client1.accept_subscriptions = true
+      @client2.accept_subscriptions = true
+      @jid1_raw = @@connections[:jid1_raw]
+      @jid2_raw = @@connections[:jid2_raw]
+      @jid1 = @jid1_raw.strip.to_s
+      @jid2 = @jid2_raw.strip.to_s
       return true
-    else
-      @initialized = true
     end
 
     logins = []
@@ -27,18 +50,18 @@ class JabberSimpleTest < Test::Unit::TestCase
       raise e
     end
 
-    @client1 = Jabber::Simple.new(*logins[0])
-    @client2 = Jabber::Simple.new(*logins[1])
+    @@connections[:client1] = Jabber::Simple.new(*logins[0])
+    @@connections[:client2] = Jabber::Simple.new(*logins[1])
 
-    @jid1_raw = Jabber::JID.new(logins[0][0])
-    @jid2_raw = Jabber::JID.new(logins[1][0])
-
-    @jid1 = @jid1_raw.strip.to_s
-    @jid2 = @jid2_raw.strip.to_s
+    @@connections[:jid1_raw] = Jabber::JID.new(logins[0][0])
+    @@connections[:jid2_raw] = Jabber::JID.new(logins[1][0])
 
     # Force load the client and roster, just to be safe.
-    @client1.roster
-    @client2.roster
+    @@connections[:client1].roster
+    @@connections[:client2].roster
+
+    # Re-run this method to setup the local instance variables the first time.
+    setup
   end
 
   def test_ensure_the_jabber_clients_are_connected_after_setup
@@ -73,13 +96,17 @@ class JabberSimpleTest < Test::Unit::TestCase
       assert_equal false, @client2.subscribed_to?(@jid1)
     end
 
-    sleep 2
+    @client1.new_subscriptions
     @client1.add(@jid2)
 
     assert_before 60 do
       assert @client1.subscribed_to?(@jid2)
       assert @client2.subscribed_to?(@jid1)
     end
+
+    new_subscriptions = @client1.new_subscriptions
+    assert_equal 1, new_subscriptions.size
+    assert_equal @jid2, new_subscriptions[0][0].jid.strip.to_s
   end
 
   def test_sent_message_should_be_received
@@ -99,7 +126,7 @@ class JabberSimpleTest < Test::Unit::TestCase
     # Fetch the message; allow up to ten seconds for the delivery to occur.
     messages = []
     begin
-      Timeout::timeout(10) {
+      Timeout::timeout(20) {
         loop do
           messages = @client2.received_messages
           break unless messages.empty?
@@ -115,6 +142,54 @@ class JabberSimpleTest < Test::Unit::TestCase
     assert_equal "test message", messages.first.body
   end
 
+  def test_presence_updates_should_be_received
+
+    @client2.add(@client1)
+
+    assert_before(60) { assert @client2.subscribed_to?(@jid1) }
+    assert_before(60) { assert_equal 0, @client2.presence_updates.size }
+
+    @client1.status(:away, "Doing something else.")
+    
+    new_statuses = []
+    assert_before(60) do
+      new_statuses = @client2.presence_updates
+      assert_equal 1, new_statuses.size
+    end
+
+    new_status = new_statuses.first
+    assert_equal @jid1, new_status[0].jid.strip.to_s
+    assert_equal "Doing something else.", new_status[2].status
+    assert_equal :away, new_status[2].show
+  end
+
+  def test_disable_auto_accept_subscription_requests
+    @client1.remove(@jid2)
+    @client2.remove(@jid1)
+
+    assert_before(60) do
+      assert_equal false, @client1.subscribed_to?(@jid2)
+      assert_equal false, @client2.subscribed_to?(@jid1)
+    end
+
+    @client1.accept_subscriptions = false
+    assert_equal false, @client1.accept_subscriptions?
+    
+    assert_before(60) { assert_equal 0, @client1.subscription_requests.size }
+
+    @client2.add(@jid1)
+
+    new_subscription_requests = []
+    assert_before(60) do
+      new_subscription_requests = @client1.subscription_requests
+      assert_equal 1, new_subscription_requests.size
+    end
+
+    new_subscription = new_subscription_requests.first
+    assert_equal @jid2, new_subscription[0].jid.strip.to_s
+    assert_equal :subscribe, new_subscription[1].type
+  end
+
   def test_automatically_reconnect
     @client1.client.close
 
@@ -128,6 +203,7 @@ class JabberSimpleTest < Test::Unit::TestCase
     @client1.deliver(@jid2, "Testing")
 
     assert_before(60) { assert @client1.connected? }
+    assert @client1.roster.instance_variable_get('@stream').is_connected?
     assert_before(60) { assert_equal 1, @client2.received_messages.size }
   end
 

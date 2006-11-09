@@ -23,16 +23,21 @@ require 'rake/rdoctask'
 require 'rcov/rcovtask'
 
 spec = Gem::Specification.new do |s| 
-  s.name = "Jabber::Simple" 
-  s.version = "0.5.0" 
+  s.add_dependency('xmpp4r', '>= 0.3.0')
+  s.name = "xmpp4r-simple" 
+  s.version = "0.8.0" 
   s.author = "Blaine Cook" 
   s.email = "romeda@gmail.com" 
   s.homepage = "http://xmpp4r-simple.rubyforge.org/" 
   s.platform = Gem::Platform::RUBY 
-  s.summary = "Jabber::Simple is just that -- a simple Jabber client library." 
+  s.summary = "A simplified Jabber client library." 
+  s.description = <<-EOF
+    Jabber::Simple takes the strong foundation laid by xmpp4r
+    and hides the relatively high complexity of maintaining a simple instant
+    messenger bot in Ruby.
+  EOF
   s.files = FileList["{test,lib}/**/*", '[A-Z]*'].exclude("rdoc", ".svn").to_a 
   s.require_path = "lib" 
-  s.autorequire = "xmpp4r-simple" 
   s.test_files = Dir.glob("test/test_*.rb")
   s.has_rdoc = true 
   s.extra_rdoc_files = ["README", "COPYING"] 

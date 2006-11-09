@@ -1,4 +1,21 @@
-$: << File.dirname(__FILE__) + '/../vendor/xmpp4r/lib/'
+# Jabber::Simple - An extremely easy-to-use Jabber client library.
+# Copyright 2006 Blaine Cook <blaine@obvious.com>, Obvious Corp.
+# 
+# Jabber::Simple is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Jabber::Simple is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Jabber::Simple; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/roster'
 
@@ -176,7 +193,8 @@ module Jabber
     # false otherwise.
     def connected?
       @client ||= nil
-      @client.respond_to?(:is_connected?) && @client.is_connected?
+      connected = @client.respond_to?(:is_connected?) && @client.is_connected?
+      return connected
     end
 
     # Returns an array of messages received since the last time
@@ -223,11 +241,28 @@ module Jabber
     def new_subscriptions(&block)
       dequeue(:new_subscriptions, &block)
     end
+    
+    # Returns an array of subscription notifications received since the last
+    # time subscription_requests was called. Passing a block will yield each update
+    # in turn, allowing you to break part-way through processing (especially
+    # useful when your subscription handling code is not thread-safe (e.g.,
+    # ActiveRecord).
+    #
+    # e.g.:
+    #
+    #   jabber.subscription_requests do |friend, presence|
+    #     puts "Received presence update from #{friend.to_s}: #{presence}"
+    #   end
+    def subscription_requests(&block)
+      dequeue(:subscription_requests, &block)
+    end
 
+ 
     # Returns true if auto-accept subscriptions (friend requests) is enabled
     # (default), false otherwise.
     def accept_subscriptions?
-      @accept_subscriptions ||= true
+      @accept_subscriptions = true if @accept_subscriptions.nil?
+      @accept_subscriptions
     end
 
     # Change whether or not subscriptions (friend requests) are automatically accepted.
@@ -267,6 +302,7 @@ module Jabber
     private
 
     def client=(client)
+      self.roster = nil # ensure we clear the roster, since that's now associated with a different client.
       @client = client
     end
 
@@ -295,7 +331,6 @@ module Jabber
     end
 
     def disconnect!(auto_reconnect = true)
-      self.roster = nil
       if client.respond_to?(:is_connected?) && client.is_connected?
         client.close
       end
@@ -371,3 +406,5 @@ module Jabber
     end
   end
 end
+
+true
