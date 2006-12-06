@@ -1,3 +1,11 @@
+xmpp4r-simple (0.8.2)
+
+  [ Blaine Cook ]
+  * Add presence_updates?, received_messages?, and new_subscriptions? methods.
+
+-- Blaine Cook <blaine@obvious.com>  Wed, 06 Dec 2006 09:40:28 -0800
+
+
 xmpp4r-simple (0.8.1)
 
   [ Blaine Cook ]
