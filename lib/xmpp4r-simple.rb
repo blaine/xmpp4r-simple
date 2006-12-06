@@ -298,6 +298,16 @@ module Jabber
     def disconnect
       disconnect!
     end
+    
+    # Queue messages for delivery once a user has accepted our authorization
+    # request. Works in conjunction with the deferred delivery thread.
+    #
+    # You can use this method if you want to manually add friends and still
+    # have the message queued for later delivery.
+    def deliver_deferred(jid, message, type)
+      msg = {:to => jid, :message => message, :type => type}
+      queue(:pending_messages) << [msg]
+    end
 
     private
 
@@ -380,13 +390,6 @@ module Jabber
           end
         }
       }
-    end
-
-    # Queue messages for delivery once a user has accepted our authorization
-    # request. Works in conjunction with the deferred delivery thread.
-    def deliver_deferred(jid, message, type) #:nodoc:
-      msg = {:to => jid, :message => message, :type => type}
-      queue(:pending_messages) << [msg]
     end
 
     def queue(queue)
