@@ -212,6 +212,12 @@ module Jabber
       dequeue(:received_messages, &block)
     end
 
+    # Returns true if there are unprocessed received messages waiting in the
+    # queue, false otherwise.
+    def received_messages?
+      !queue(:received_messages).empty?
+    end
+
     # Returns an array of presence updates received since the last time
     # presence_updates was called. Passing a block will yield each update in
     # turn, allowing you to break part-way through processing (especially
@@ -225,6 +231,12 @@ module Jabber
     #   end
     def presence_updates(&block)
       dequeue(:presence_updates, &block)
+    end
+    
+    # Returns true if there are unprocessed presence updates waiting in the
+    # queue, false otherwise.
+    def presence_updates?
+      !queue(:presence_updates).empty?
     end
 
     # Returns an array of subscription notifications received since the last
@@ -242,6 +254,12 @@ module Jabber
       dequeue(:new_subscriptions, &block)
     end
     
+    # Returns true if there are unprocessed presence updates waiting in the
+    # queue, false otherwise.
+    def new_subscriptions?
+      !queue(:new_subscriptions).empty?
+    end
+    
     # Returns an array of subscription notifications received since the last
     # time subscription_requests was called. Passing a block will yield each update
     # in turn, allowing you to break part-way through processing (especially
@@ -256,7 +274,6 @@ module Jabber
     def subscription_requests(&block)
       dequeue(:subscription_requests, &block)
     end
-
  
     # Returns true if auto-accept subscriptions (friend requests) is enabled
     # (default), false otherwise.
