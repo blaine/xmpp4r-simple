@@ -1,3 +1,13 @@
+xmpp4r-simple (0.8.3)
+
+  [ Blaine Cook ]
+  * Update presence_updates to only store one presence_update per user.
+		Changes methods, will break code that uses presence_updates if not updated
+		correspondingly, check the documenation for the new semantics.
+
+-- Blaine Cook <blaine@obvious.com>  Thu, 07 Dec 2006 12:45:52 -0800
+
+
 xmpp4r-simple (0.8.2)
 
   [ Blaine Cook ]

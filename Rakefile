@@ -25,7 +25,7 @@ require 'rcov/rcovtask'
 spec = Gem::Specification.new do |s| 
   s.add_dependency('xmpp4r', '>= 0.3.0')
   s.name = "xmpp4r-simple" 
-  s.version = "0.8.2" 
+  s.version = "0.8.3" 
   s.author = "Blaine Cook" 
   s.email = "romeda@gmail.com" 
   s.homepage = "http://xmpp4r-simple.rubyforge.org/" 
