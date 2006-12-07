@@ -226,11 +226,22 @@ module Jabber
     #
     # e.g.:
     #
-    #   jabber.presence_updates do |friend, old_presence, new_presence|
-    #     puts "Received presence update from #{friend.to_s}: #{new_presence}"
+    #   jabber.presence_updates do |friend, new_presence|
+    #     puts "Received presence update from #{friend}: #{new_presence}"
     #   end
     def presence_updates(&block)
-      dequeue(:presence_updates, &block)
+      updates = []
+      @presence_mutex.synchronize do
+        dequeue(:presence_updates) do |friend|
+          presence = @presence_updates[friend]
+          next unless presence
+          new_update = [friend, presence[0], presence[1]]
+          yield new_update if block_given?
+          updates << new_update
+          @presence_updates.delete(friend)
+        end
+      end
+      return updates
     end
     
     # Returns true if there are unprocessed presence updates waiting in the
@@ -384,8 +395,21 @@ module Jabber
         end
       end
 
+      @presence_updates = {}
+      @presence_mutex = Mutex.new
       roster.add_presence_callback do |roster_item, old_presence, new_presence|
-        queue(:presence_updates) << [roster_item, old_presence, new_presence]
+        simple_jid = roster_item.jid.strip.to_s
+        presence = case new_presence.type
+                   when nil: new_presence.show || :online
+                   when :unavailable: :unavailable
+                   else
+                     nil
+                   end
+
+        if presence && @presence_updates[simple_jid] != presence
+          queue(:presence_updates) << simple_jid
+          @presence_mutex.synchronize { @presence_updates[simple_jid] = [presence, new_presence.status] }
+        end
       end
     end
 

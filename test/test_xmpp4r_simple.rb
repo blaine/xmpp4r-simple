@@ -145,6 +145,7 @@ class JabberSimpleTest < Test::Unit::TestCase
   def test_presence_updates_should_be_received
 
     @client2.add(@client1)
+    @client1.add(@client2)
 
     assert_before(60) { assert @client2.subscribed_to?(@jid1) }
     assert_before(60) { assert_equal 0, @client2.presence_updates.size }
@@ -158,9 +159,9 @@ class JabberSimpleTest < Test::Unit::TestCase
     end
 
     new_status = new_statuses.first
-    assert_equal @jid1, new_status[0].jid.strip.to_s
-    assert_equal "Doing something else.", new_status[2].status
-    assert_equal :away, new_status[2].show
+    assert_equal @jid1, new_status[0]
+    assert_equal "Doing something else.", new_status[2]
+    assert_equal :away, new_status[1]
   end
 
   def test_disable_auto_accept_subscription_requests
