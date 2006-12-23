@@ -1,4 +1,4 @@
-xmpp4r-simple (0.8.3)
+xmpp4r-simple (0.8.4)
 
   [ Blaine Cook ]
   * Catch broken connections and attempt to reconnect 3 times.
