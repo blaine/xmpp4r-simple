@@ -1,6 +1,14 @@
 xmpp4r-simple (0.8.3)
 
   [ Blaine Cook ]
+  * Catch broken connections and attempt to reconnect 3 times.
+
+-- Blaine Cook <blaine@obvious.com>  Fri, 23 Dec 2006 00:12:09 -0800
+
+
+xmpp4r-simple (0.8.3)
+
+  [ Blaine Cook ]
   * Update presence_updates to only store one presence_update per user.
 		Changes methods, will break code that uses presence_updates if not updated
 		correspondingly, check the documenation for the new semantics.
