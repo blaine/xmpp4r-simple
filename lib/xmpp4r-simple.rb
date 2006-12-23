@@ -312,7 +312,17 @@ module Jabber
     
     # Send a Jabber stanza over-the-wire.
     def send!(msg)
-      client.send(msg)
+      attempts = 0
+      begin
+        attempts += 1
+        client.send(msg)
+      rescue Errno::EPIPE, IOError => e
+        sleep 0.33
+        disconnect
+        reconnect
+        retry unless attempts > 3
+        raise e
+      end
     end
 
     # Use this to force the client to reconnect after a force_disconnect.
