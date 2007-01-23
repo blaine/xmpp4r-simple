@@ -103,6 +103,9 @@ module Jabber
     # If the recipient is not in your contacts list, the message will be queued
     # for later delivery, and the Contact will be automatically asked for
     # authorization (see Jabber::Simple#add).
+    #
+    # message should be a string or a valid Jabber::Message object. In either case,
+    # the message recipient will be set to jid.
     def deliver(jid, message, type=:chat)
       contacts(jid) do |friend|
         unless subscribed_to? friend
