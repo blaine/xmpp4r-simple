@@ -109,9 +109,14 @@ module Jabber
           add(friend.jid)
           return deliver_deferred(friend.jid, message, type)
         end
-        msg = Message.new(friend.jid)
-        msg.type = type
-        msg.body = message
+        if message.kind_of?(Jabber::Message)
+          msg = message
+          msg.to = friend.jid
+        else
+          msg = Message.new(friend.jid)
+          msg.type = type
+          msg.body = message
+        end
         send!(msg)
       end
     end
