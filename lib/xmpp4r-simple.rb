@@ -388,7 +388,12 @@ module Jabber
 
     def disconnect!(auto_reconnect = true)
       if client.respond_to?(:is_connected?) && client.is_connected?
-        client.close
+        begin
+          client.close
+        rescue Errno::EPIPE, IOError => e
+          # probably should log this.
+          nil
+        end
       end
       client = nil
       @disconnected = auto_reconnect
