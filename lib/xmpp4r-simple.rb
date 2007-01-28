@@ -18,6 +18,7 @@
 require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/roster'
+require 'xmpp4r/vcard'
 
 module Jabber
 
@@ -25,6 +26,8 @@ module Jabber
   end
   
   class Contact #:nodoc:
+
+    include DRb::DRbUndumped if defined?(DRb::DRbUndumped)
 
     def initialize(client, jid)
       @jid = jid.respond_to?(:resource) ? jid : JID.new(jid)
@@ -72,6 +75,8 @@ module Jabber
   end
 
   class Simple
+
+    include DRb::DRbUndumped if defined?(DRb::DRbUndumped)
 
     # Create a new Jabber::Simple client. You will be automatically connected
     # to the Jabber server and your status message will be set to the string
@@ -141,7 +146,7 @@ module Jabber
       stat_msg = Presence.new(@presence, @status_message)
       send!(stat_msg)
     end
-  
+
     # Ask the users specified by jids for authorization (i.e., ask them to add
     # you to their contact list). If you are already in the user's contact list,
     # add() will not attempt to re-request authorization. In order to force
@@ -325,7 +330,13 @@ module Jabber
         attempts += 1
         client.send(msg)
       rescue Errno::EPIPE, IOError => e
-        sleep 0.33
+        sleep 1
+        disconnect
+        reconnect
+        retry unless attempts > 3
+        raise e
+      rescue Errno::ECONNRESET => e
+        sleep (attempts^2) * 60 + 60
         disconnect
         reconnect
         retry unless attempts > 3
