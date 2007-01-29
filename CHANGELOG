@@ -1,3 +1,12 @@
+xmpp4r-simple (0.8.7)
+
+  [ Blaine Cook ]
+	* If using Jabber::Simple in a DRb environment, the Jabber::Simple object
+   	will execute in the DRb server's environment to improve efficiency.
+  * Jabber::Simple will now recover gracefully from server-side disconnects.
+
+-- Blaine Cook <blaine@obvious.com> Sun, 28 Jan 2007 10:30:48 -0800
+
 xmpp4r-simple (0.8.6)
 
   [ Blaine Cook ]
