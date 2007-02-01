@@ -24,6 +24,8 @@ require 'rcov/rcovtask'
 
 spec = Gem::Specification.new do |s| 
   s.add_dependency('xmpp4r', '>= 0.3.0')
+  s.add_dependency('rake')
+  s.add_dependency('rcov')
   s.name = "xmpp4r-simple" 
   s.version = "0.8.7" 
   s.author = "Blaine Cook" 
