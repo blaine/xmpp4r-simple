@@ -381,6 +381,10 @@ module Jabber
       raise ConnectionError, "Connections are disabled - use Jabber::Simple::force_connect() to reconnect." if @disconnected
       # Pre-connect
       @connect_mutex ||= Mutex.new
+
+      # don't try to connect if another thread is already connecting.
+      return if @connect_mutex.locked?
+
       @connect_mutex.lock
       disconnect!(false) if connected?
 
