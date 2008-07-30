@@ -15,41 +15,13 @@
 # along with Jabber::Simple; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-require 'rubygems'
-Gem::manage_gems
-require 'rake/gempackagetask'
 require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rcov/rcovtask'
 
-spec = Gem::Specification.new do |s| 
-  s.add_dependency('xmpp4r', '>= 0.3.0')
-  s.add_dependency('rake')
-  s.add_dependency('rcov')
-  s.name = "xmpp4r-simple" 
-  s.version = "0.8.7" 
-  s.author = "Blaine Cook" 
-  s.email = "romeda@gmail.com" 
-  s.homepage = "http://xmpp4r-simple.rubyforge.org/" 
-  s.platform = Gem::Platform::RUBY 
-  s.summary = "A simplified Jabber client library." 
-  s.description = <<-EOF
-    Jabber::Simple takes the strong foundation laid by xmpp4r
-    and hides the relatively high complexity of maintaining a simple instant
-    messenger bot in Ruby.
-  EOF
-  s.files = FileList["{test,lib}/**/*", '[A-Z]*'].exclude("rdoc", ".svn").to_a 
-  s.require_path = "lib" 
-  s.test_files = Dir.glob("test/test_*.rb")
-  s.has_rdoc = true 
-  s.extra_rdoc_files = ["README", "COPYING"] 
-  s.rubyforge_project = "xmpp4r-simple"
-end 
-
-Rake::GemPackageTask.new(spec) do |pkg| 
-  pkg.gem_spec = spec
-  pkg.need_tar = true 
-  pkg.need_zip = true
+desc "Package Gem"
+task :package do
+  system('gem build xmpp4r-simple.gemspec')
 end
 
 desc "Default Task"
