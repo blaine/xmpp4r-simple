@@ -42,7 +42,7 @@ that is familiar to users of traditional instant messenger clients.
 = Copyright
 
 Jabber::Simple - An extremely easy-to-use Jabber client library.
-Copyright 2006 Blaine Cook <blaine@obvious.com>, Obvious Corp.
+Copyright 2006-2008 Blaine Cook <romeda@gmail.com>.
 
 Jabber::Simple is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
