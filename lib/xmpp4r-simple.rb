@@ -438,8 +438,8 @@ module Jabber
       roster.add_presence_callback do |roster_item, old_presence, new_presence|
         simple_jid = roster_item.jid.strip.to_s
         presence = case new_presence.type
-                   when nil: new_presence.show || :online
-                   when :unavailable: :unavailable
+                   when nil then new_presence.show || :online
+                   when :unavailable then :unavailable
                    else
                      nil
                    end
