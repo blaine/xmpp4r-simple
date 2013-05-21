@@ -82,11 +82,12 @@ module Jabber
     # to the Jabber server and your status message will be set to the string
     # passed in as the status_message argument.
     #
-    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!")
-    def initialize(jid, password, status = nil, status_message = "Available")
+    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!",'talk.l.google.com')
+    def initialize(jid, password, status = nil, status_message = "Available",server = nil)
       @jid = jid
       @password = password
       @disconnected = false
+      @server = server
       status(status, status_message)
       start_deferred_delivery_thread
     end
@@ -391,7 +392,7 @@ module Jabber
       # Connect
       jid = JID.new(@jid)
       my_client = Client.new(@jid)
-      my_client.connect
+      my_client.connect(@server)
       my_client.auth(@password)
       self.client = my_client
 
