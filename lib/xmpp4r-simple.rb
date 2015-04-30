@@ -346,7 +346,8 @@ module Jabber
         retry unless attempts > 3
         raise e
       rescue Errno::ECONNRESET => e
-        sleep (attempts^2) * 60 + 60
+        # @see http://xmpp.org/rfcs/rfc6120.html#tcp-reconnect XMPP: Core - Reconnection
+        sleep 1 + rand(60) + (attempts - 1) * 20
         disconnect
         reconnect
         retry unless attempts > 3
