@@ -85,14 +85,18 @@ module Jabber
     # If you'd like to connect to a different talk server than the one which would
     # be guessed from your jid, you may provide a server. For example, to connect
     # to the gmail talk servers with a jid that doesn't end in @gmail.com, just provide
-    # 'talk.l.google.com' as the server. You may leave server as nil to use the default.
+    # options {:host => 'talk.l.google.com'}.
     #
-    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!", "Available", "host-not-from-jid.tld")
-    def initialize(jid, password, status = nil, status_message = "Available", server = nil)
+    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!", "Available", {:host => "host-not-from-jid.tld", :port => 64321})
+    def initialize(jid, password, status = nil, status_message = "Available", opts= {})
       @jid = jid
       @password = password
       @disconnected = false
-      @server = server
+      @opts = {
+        :host => opts[:host],  # nil by default as in xmpp4r.
+        :port => !opts[:port].nil? ? opts[:port] : 5222,  # xmpp4r default.
+        :allow_tls => !opts[:allow_tls].nil? ? opts[:allow_tls] : true  # xmpp4r default.
+      }
       status(status, status_message)
       start_deferred_delivery_thread
     end
@@ -397,7 +401,8 @@ module Jabber
       # Connect
       jid = JID.new(@jid)
       my_client = Client.new(@jid)
-      my_client.connect(@server)
+      my_client.allow_tls = @opts[:allow_tls]
+      my_client.connect @opts[:host], @opts[:port]
       my_client.auth(@password)
       self.client = my_client
 
