@@ -87,8 +87,8 @@ module Jabber
     # to the gmail talk servers with a jid that doesn't end in @gmail.com, just provide
     # 'talk.l.google.com' as the server. You may leave server as nil to use the default.
     #
-    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!")
-    def initialize(jid, password, status = nil, status_message = "Available", server=nil)
+    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!", "Available", "host-not-from-jid.tld")
+    def initialize(jid, password, status = nil, status_message = "Available", server = nil)
       @jid = jid
       @password = password
       @disconnected = false
