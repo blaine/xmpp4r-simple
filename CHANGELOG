@@ -1,6 +1,19 @@
+xmpp4r-simple (0.8.9)
+
+  [ Alexander Pervakov ]
+  * Changed reconnect timeout according to RFC 6120.
+
+  [ Emmett Shear, thelinuxlich, Alexander Pervakov ]
+  * Adding connection options (host, port, allow_tls).
+
+  [ David Rice ]
+  * Ruby 1.9 compatibility fix.
+
+-- Alexander Pervakov <frost.nzcr4@jagmort.com> Monday, 04 May 2015 15:09:00 +0300
+
 xmpp4r-simple (0.8.8)
 
-  [ Blaine Cook]
+  [ Blaine Cook ]
   * Add xmpp4r-simple.gemspec, remove gem-related code from Rakefile
 
 -- Blaine Cook <romeda@gmail.com> Wed, 30 Jul 2008 16:03:00 -0800
@@ -8,7 +21,7 @@ xmpp4r-simple (0.8.8)
 xmpp4r-simple (0.8.7)
 
   [ Blaine Cook ]
-	* If using Jabber::Simple in a DRb environment, the Jabber::Simple object
+  * If using Jabber::Simple in a DRb environment, the Jabber::Simple object
    	will execute in the DRb server's environment to improve efficiency.
   * Jabber::Simple will now recover gracefully from server-side disconnects.
   * Updated Rakefile to pass tests on firebrigade (http://firebrigade.seattlerb.org)
