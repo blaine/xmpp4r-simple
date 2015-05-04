@@ -82,11 +82,21 @@ module Jabber
     # to the Jabber server and your status message will be set to the string
     # passed in as the status_message argument.
     #
-    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!")
-    def initialize(jid, password, status = nil, status_message = "Available")
+    # If you'd like to connect to a different talk server than the one which would
+    # be guessed from your jid, you may provide a server. For example, to connect
+    # to the gmail talk servers with a jid that doesn't end in @gmail.com, just provide
+    # options {:host => 'talk.l.google.com'}.
+    #
+    # jabber = Jabber::Simple.new("me@example.com", "password", "Chat with me - Please!", "Available", {:host => "host-not-from-jid.tld", :port => 64321})
+    def initialize(jid, password, status = nil, status_message = "Available", opts= {})
       @jid = jid
       @password = password
       @disconnected = false
+      @opts = {
+        :host => opts[:host],  # nil by default as in xmpp4r.
+        :port => !opts[:port].nil? ? opts[:port] : 5222,  # xmpp4r default.
+        :allow_tls => !opts[:allow_tls].nil? ? opts[:allow_tls] : true  # xmpp4r default.
+      }
       status(status, status_message)
       start_deferred_delivery_thread
     end
@@ -336,7 +346,8 @@ module Jabber
         retry unless attempts > 3
         raise e
       rescue Errno::ECONNRESET => e
-        sleep (attempts^2) * 60 + 60
+        # @see http://xmpp.org/rfcs/rfc6120.html#tcp-reconnect XMPP: Core - Reconnection
+        sleep 1 + rand(60) + (attempts - 1) * 20
         disconnect
         reconnect
         retry unless attempts > 3
@@ -391,7 +402,8 @@ module Jabber
       # Connect
       jid = JID.new(@jid)
       my_client = Client.new(@jid)
-      my_client.connect
+      my_client.allow_tls = @opts[:allow_tls]
+      my_client.connect @opts[:host], @opts[:port]
       my_client.auth(@password)
       self.client = my_client
 
